@@ -2,7 +2,6 @@ import React from 'react';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {
   View,
-  Button,
   ImageBackground,
   StyleSheet,
   Image,
@@ -13,13 +12,13 @@ import {
 type RootStackParamList = {
   Home: undefined;
   Login: undefined;
+  Register: undefined;
   // other screen definitions
 };
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  'Home',
-  'Login'
+  'Home'
 >;
 
 interface HomeProps {
@@ -40,7 +39,11 @@ const Home = ({navigation}: HomeProps) => {
           />
           <Text style={styles.text}>We expect everything.</Text>
           <TouchableOpacity>
-            <Text style={styles.signup}>Sign Up</Text>
+            <Text
+              style={styles.signup}
+              onPress={() => navigation.navigate('Register')}>
+              Sign Up
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity>
             <Text
