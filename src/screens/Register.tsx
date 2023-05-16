@@ -13,6 +13,9 @@ import {
   Alert,
 } from 'react-native';
 
+import {Formik} from 'formik';
+import * as yup from 'yup';
+
 type RootStackParamList = {
   Home: undefined;
   Login: undefined;
@@ -22,17 +25,28 @@ type RootStackParamList = {
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'Home',
-  'Login'
+  'Register'
 >;
 
 interface HomeProps {
   navigation: HomeScreenNavigationProp;
 }
 
+const registerValidationSchema = yup.object().shape({
+  email: yup
+    .string()
+    .email('Please enter valid email')
+    .required('Email Address is Required'),
+  password: yup
+    .string()
+    .min(8, ({min}) => `Password must be at least ${min} characters`)
+    .required('Password is required'),
+});
+
 const Register = ({navigation}: HomeProps) => {
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [password, setPassword] = useState('');
+  // const [email, setEmail] = useState('');
+  // const [name, setName] = useState('');
+  // const [password, setPassword] = useState('');
 
   const [isError, setIsError] = useState(false);
   const [message, setMessage] = useState('');
@@ -41,35 +55,14 @@ const Register = ({navigation}: HomeProps) => {
 
   const [modalVisible, setModalVisible] = useState(false);
 
-  // const onLoggedIn = (token: any) => {
-  //   fetch(`${process.env.REACT_APP_API_URL}/private`, {
-  //     method: 'GET',
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //       Authorization: `Bearer ${token}`,
-  //     },
-  //   })
-  //     .then(async res => {
-  //       try {
-  //         const jsonRes = await res.json();
-  //         if (res.status === 200) {
-  //           setMessage(jsonRes.message);
-  //         }
-  //       } catch (err) {
-  //         console.log(err);
-  //       }
-  //     })
-  //     .catch(err => {
-  //       console.log(err);
-  //     });
-  // };
+  type valuesType = {
+    name: string;
+    email: string;
+    password: string;
+  };
 
-  const onSubmitHandler = navigation => {
-    const payload = {
-      email,
-      name,
-      password,
-    };
+  const onSubmitHandler = (values: valuesType) => {
+    const payload = values;
     // fetch(`${process.env.REACT_APP_API_URL}auth/register`, {
     fetch('http://10.0.2.2:5000/api/auth/register', {
       method: 'POST',
@@ -88,13 +81,14 @@ const Register = ({navigation}: HomeProps) => {
             setMessage(jsonRes.message);
             setModalText(jsonRes.message);
             setModalBTN('Close');
-            setModalVisible(true);
+            await setModalVisible(true);
+            console.log(modalVisible);
           } else {
             // onLoggedIn(jsonRes.token);
             setIsError(false);
             setModalText('Successfully registered');
             setModalBTN('Go to Login');
-            setModalVisible(true);
+            await setModalVisible(true);
           }
         } catch (err) {
           console.log(err);
@@ -152,41 +146,70 @@ const Register = ({navigation}: HomeProps) => {
             style={styles.logo}
             resizeMode="contain"
           />
-          <TextInput
-            style={styles.input}
-            value={name}
-            placeholder={'Name'}
-            onChangeText={text => setName(text)}
-            autoCapitalize={'none'}
-          />
-          <TextInput
-            style={styles.input}
-            value={email}
-            placeholder={'Email'}
-            onChangeText={text => setEmail(text)}
-            autoCapitalize={'none'}
-          />
-          <TextInput
-            style={styles.input}
-            value={password}
-            placeholder={'Password'}
-            secureTextEntry
-            onChangeText={text => setPassword(text)}
-          />
-          <Text style={[styles.message, {color: isError ? 'red' : 'green'}]}>
-            {message ? getMessage() : null}
-          </Text>
-          <TouchableOpacity>
-            <Text style={styles.signup} onPress={onSubmitHandler}>
-              Sign Up
-            </Text>
-          </TouchableOpacity>
+          <Formik
+            validationSchema={registerValidationSchema}
+            initialValues={{name: '', email: '', password: ''}}
+            onSubmit={values => onSubmitHandler(values)}>
+            {({
+              handleChange,
+              handleBlur,
+              handleSubmit,
+              values,
+              errors,
+              touched,
+              isValid,
+            }) => (
+              <>
+                <TextInput
+                  style={styles.input}
+                  value={values.name}
+                  placeholder={'Name'}
+                  // onChangeText={text => setName(text)}
+                  onChangeText={handleChange('name')}
+                  autoCapitalize={'none'}
+                />
+                <TextInput
+                  style={styles.input}
+                  value={values.email}
+                  placeholder={'Email'}
+                  // onChangeText={text => setEmail(text)}
+                  onChangeText={handleChange('email')}
+                  onBlur={handleBlur('email')}
+                  autoCapitalize={'none'}
+                  keyboardType="email-address"
+                />
+                {errors.email && touched.email && (
+                  <Text style={styles.errorText}>{errors.email}</Text>
+                )}
+                <TextInput
+                  style={styles.input}
+                  value={values.password}
+                  placeholder={'Password'}
+                  secureTextEntry
+                  // onChangeText={text => setPassword(text)}
+                  onChangeText={handleChange('password')}
+                  onBlur={handleBlur('password')}
+                />
+                {errors.password && touched.password && (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                )}
+                {/* <Text
+                  style={[styles.message, {color: isError ? 'red' : 'green'}]}>
+                  {message ? getMessage() : null}
+                </Text> */}
+                <TouchableOpacity>
+                  <Text
+                    style={styles.signup}
+                    onPress={handleSubmit}
+                    // disabled={!isValid}
+                  >
+                    Sign Up
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </Formik>
         </View>
-        <Pressable
-          style={[styles.button, styles.buttonOpen]}
-          onPress={() => setModalVisible(true)}>
-          <Text style={styles.textStyle}>Show Modal</Text>
-        </Pressable>
       </ImageBackground>
     </View>
   );
@@ -267,6 +290,13 @@ const styles = StyleSheet.create({
   modalText: {
     marginBottom: 15,
     textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 15,
+    color: 'red',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: '11%',
   },
 });
 
