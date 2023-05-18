@@ -11,6 +11,7 @@ import {
   Modal,
   StyleSheet,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {Formik} from 'formik';
 import * as yup from 'yup';
@@ -74,6 +75,8 @@ const Login = ({navigation}: HomeProps) => {
             setModalBTN('Close');
             setModalVisible(true);
           } else {
+            console.log('jsonRes', jsonRes);
+            AsyncStorage.setItem('userInfo', JSON.stringify(jsonRes));
             // onLoggedIn(jsonRes.token);
             setIsError(false);
             setModalText('Successfully logged in');

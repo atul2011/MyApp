@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import {
   View,
@@ -8,6 +8,7 @@ import {
   Text,
   TouchableOpacity,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type RootStackParamList = {
   Home: undefined;
@@ -26,6 +27,24 @@ interface HomeProps {
 }
 
 const Home = ({navigation}: HomeProps) => {
+  const [userToken, setUserToken] = useState({});
+
+  // Fetch token and set state
+  useEffect(() => {
+    restoreUser(); // Call restoreUser when the component mounts
+  }, []);
+  const restoreUser = async () => {
+    const userInfo = await AsyncStorage.getItem('userInfo');
+    if (userInfo) {
+      let jUserInfo = JSON.parse(userInfo);
+      setUserToken(jUserInfo.data.token);
+      console.log(userToken);
+      // Perform other logic with the user token
+    } else {
+      // Handle the case when the userInfo is null
+    }
+  };
+
   return (
     <View>
       <ImageBackground
@@ -38,20 +57,26 @@ const Home = ({navigation}: HomeProps) => {
             resizeMode="contain"
           />
           <Text style={styles.text}>We expect everything.</Text>
-          <TouchableOpacity>
-            <Text
-              style={styles.signup}
-              onPress={() => navigation.navigate('Register')}>
-              Sign Up
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Text
-              style={styles.login}
-              onPress={() => navigation.navigate('Login')}>
-              Log In
-            </Text>
-          </TouchableOpacity>
+          {userToken == null ? (
+            <>
+              <TouchableOpacity>
+                <Text
+                  style={styles.signup}
+                  onPress={() => navigation.navigate('Register')}>
+                  Sign Up
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity>
+                <Text
+                  style={styles.login}
+                  onPress={() => navigation.navigate('Login')}>
+                  Log In
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <></>
+          )}
         </View>
       </ImageBackground>
     </View>
