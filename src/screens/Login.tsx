@@ -49,7 +49,6 @@ const Login = ({navigation}: HomeProps) => {
   const [modalVisible, setModalVisible] = useState(false);
 
   type valuesType = {
-    name: string;
     email: string;
     password: string;
   };

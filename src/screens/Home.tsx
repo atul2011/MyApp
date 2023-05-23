@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
+import {useIsFocused} from '@react-navigation/native';
 import {
   View,
   ImageBackground,
@@ -7,6 +8,8 @@ import {
   Image,
   Text,
   TouchableOpacity,
+  Button,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -27,22 +30,65 @@ interface HomeProps {
 }
 
 const Home = ({navigation}: HomeProps) => {
-  const [userToken, setUserToken] = useState({});
+  const [userToken, setUserToken] = useState('');
+  const [user, setUserInfo] = useState({});
+  const [loading, setLoading] = useState(true); // Added loading state
+  const isFocused = useIsFocused(); // Hook to check if the component is focused
 
   // Fetch token and set state
   useEffect(() => {
     restoreUser(); // Call restoreUser when the component mounts
-  }, []);
+  }, [isFocused]); // Listen for changes in the isFocused state
+
   const restoreUser = async () => {
-    const userInfo = await AsyncStorage.getItem('userInfo');
-    if (userInfo) {
-      let jUserInfo = JSON.parse(userInfo);
-      setUserToken(jUserInfo.data.token);
-      console.log(userToken);
-      // Perform other logic with the user token
-    } else {
-      // Handle the case when the userInfo is null
+    try {
+      const userInfo = await AsyncStorage.getItem('userInfo');
+      if (userInfo) {
+        let jUserInfo = JSON.parse(userInfo);
+        setUserInfo(jUserInfo.data.user);
+        setUserToken(jUserInfo.data.token);
+        // Perform other logic with the user token
+      } else {
+        // Handle the case when the userInfo is null
+      }
+    } catch (error) {
+      // Handle the error
+    } finally {
+      setLoading(false); // Update the loading state
     }
+  };
+
+  useEffect(() => {
+    if (userToken !== '') {
+      // Perform other logic with the user token
+      console.log(userToken);
+    }
+  }, [userToken]);
+
+  const logout = () => {
+    console.log('here');
+    const payload = {
+      token: userToken,
+    };
+    fetch('http://10.0.2.2:5000/api/auth/logout', {
+      method: 'POST',
+      headers: {
+        // Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+      .then(res => {
+        console.log('res', res);
+        AsyncStorage.removeItem('userInfo');
+        setUserToken('');
+        setUserInfo({});
+        console.log(userToken);
+        // navigation.navigate('Home');
+      })
+      .catch(e => {
+        console.log(`logout error ${e}`);
+      });
   };
 
   return (
@@ -57,25 +103,24 @@ const Home = ({navigation}: HomeProps) => {
             resizeMode="contain"
           />
           <Text style={styles.text}>We expect everything.</Text>
-          {userToken == null ? (
+          {loading ? ( // Display loading indicator while fetching userToken
+            <ActivityIndicator color="red" size="large" />
+          ) : userToken === '' ? (
             <>
-              <TouchableOpacity>
-                <Text
-                  style={styles.signup}
-                  onPress={() => navigation.navigate('Register')}>
-                  Sign Up
-                </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.signup}>Sign Up</Text>
               </TouchableOpacity>
-              <TouchableOpacity>
-                <Text
-                  style={styles.login}
-                  onPress={() => navigation.navigate('Login')}>
-                  Log In
-                </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.login}>Log In</Text>
               </TouchableOpacity>
             </>
           ) : (
-            <></>
+            <>
+              <View style={styles.container}>
+                <Text style={styles.welcome}>Welcome {user.name}</Text>
+                <Button title="Logout" color="red" onPress={logout} />
+              </View>
+            </>
           )}
         </View>
       </ImageBackground>
@@ -84,6 +129,16 @@ const Home = ({navigation}: HomeProps) => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  welcome: {
+    fontSize: 18,
+    marginBottom: 8,
+    marginTop: '10%',
+    color: 'white',
+  },
   background: {
     width: '100%',
     height: '100%',
